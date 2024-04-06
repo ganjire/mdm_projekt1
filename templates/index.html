@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMDB Rating Prediction</title>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        form {
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #prediction {
+            margin-top: 20px;
+            text-align: center;
+            
+        }
+
+        #model_metrics {
+            display: none;
+            max-width: 600px;
+            margin: 20px auto; 
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center; 
+        }
+        #model_metrics h2, #model_metrics h3 {
+            margin: 10px 0; 
+        }
+        #model_metrics p, #model_metrics ul {
+            margin: 5px 0; 
+        }
+        #model_metrics ul {
+            list-style-type: none; 
+            padding: 0; 
+        }
+        #model_metrics li {
+            margin: 5px 0; 
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>IMDb Rating Prediction</h1>
+        <form id="predict_form">
+            <label for="year">Year:</label>
+            <input type="number" id="year" name="year" required><br>
+            <label for="ranking">Ranking:</label>
+            <input type="number" id="ranking" name="ranking" required><br>
+            <label for="vote_count">Vote Count:</label>
+            <input type="number" id="vote_count" name="vote_count" required><br>
+            <button type="button" onclick="predictRating()">Predict</button>
+        </form>
+        <h2 id="prediction"></h2>
+    </div>
+    <div id="model_metrics">
+        <h2>Model Metrics</h2>
+        <p id="mse">MSE: </p>
+        <p id="r2">R²: </p>
+        <div>
+            <h3>Feature Importances</h3>
+            <ul id="feature_importances"></ul>
+        </div>
+    </div>
+    
+
+    <script>
+        function predictRating() {
+            const year = document.getElementById('year').value;
+            const ranking = document.getElementById('ranking').value;
+            const voteCount = document.getElementById('vote_count').value;
+
+            const data = {year, ranking, vote_count: voteCount};
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(prediction => {
+                document.getElementById('mse').innerText = 'MSE: ' + prediction.mse.toFixed(3);
+                document.getElementById('r2').innerText = 'R²: ' + prediction.r2.toFixed(3);
+                document.getElementById('prediction').innerHTML = `Predicted Rating for "<strong>${prediction.title}</strong>": ${prediction.rating_prediction.toFixed(3)}`;
+
+                // Mach den Container sichtbar
+                document.getElementById('model_metrics').style.display = 'block';
+
+                const featureImportances = prediction.feature_importances;
+                const featureImportancesList = document.getElementById('feature_importances');
+                featureImportancesList.innerHTML = ''; // Leere die Liste vor dem Hinzufügen neuer Elemente
+
+                // Umwandeln des Objekts in ein Array von [key, value]-Paaren und Sortieren
+                const sortedFeatureImportances = Object.entries(featureImportances)
+                .sort((a, b) => b[1] - a[1]); // Sortiere absteigend nach der Wichtigkeit
+
+                // Iteriere über das sortierte Array
+                for (const [key, value] of sortedFeatureImportances) {
+                const li = document.createElement('li');
+                const percentValue = (value * 100).toFixed(0); // Umrechnen in Prozent und Runden auf zwei Dezimalstellen.
+                li.textContent = `${key}: ${value.toFixed(3)} (${percentValue}%)`;
+                featureImportancesList.appendChild(li);
+                }
+
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

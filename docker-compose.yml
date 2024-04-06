@@ -1,0 +1,10 @@
+version: '3.10.11'
+
+services:
+  flask_playground:
+    build: /Users/rebecca/Desktop/ZHAW/Frühlingssemester2024/test/flask_playground
+    image: ganjireb/flask_playground
+    ports:
+       - "8000:8000"
+networks:
+  flask_playground-network:
